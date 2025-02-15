@@ -3,12 +3,41 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
-// Ensures gofmt doesn't remove the "fmt" import in stage 1 (feel free to remove this!)
-var _ = fmt.Fprint
+type Command struct {
+	Name string
+	args []string
+}
+
+func (c Command) handleCommand() {
+	switch c.Name {
+	case "exit":
+		if len(c.args) != 1 {
+			log.Fatal("Usage: exit <exit code>")
+		}
+		code, err := strconv.Atoi(c.args[0])
+		if err != nil || code < 0 || code > 255 {
+			log.Fatal(err)
+		}
+		os.Exit(code)
+	case "echo":
+		echoed := strings.Join(c.args, " ")
+		fmt.Println(echoed)
+	default:
+		fmt.Fprintf(os.Stderr, "%s: command not found\n", strings.TrimSpace(c.Name))
+	}
+}
+
+func (c *Command) trimArgSpaces() {
+	for i := range c.args {
+		c.args[i] = strings.TrimSpace(c.args[i])
+	}
+}
 
 func main() {
 	// Uncomment this block to pass the first stage
@@ -17,11 +46,15 @@ func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 		command, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		split := strings.Split(command, " ")
-		if len(split) >= 2 && split[0] == "exit" && strings.TrimSpace(split[1]) == "0" {
-			//fmt.Println("exit with code: ", split[1])
-			os.Exit(0)
+		if len(command) < 1 {
+			log.Fatal("invalid command")
 		}
-		fmt.Fprintf(os.Stderr, "%s: command not found\n", strings.TrimSpace(command))
+
+		split := strings.Split(command, " ")
+		command = split[0]
+		args := split[1:]
+		c := Command{Name: command, args: args}
+		c.trimArgSpaces()
+		c.handleCommand()
 	}
 }
