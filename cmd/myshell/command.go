@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -29,14 +30,25 @@ func (c Command) handleCommand() {
 		fmt.Println(echoed)
 	case "type":
 		command := c.Args[0]
+		var buildCommand Command
+		buildCommand.Name = command
 		if _, ok := shellCommands[command]; ok {
 			fmt.Printf("%s is a shell builtin\n", command)
-		} else if path := c.lookupCommand(); path != "" {
+		} else if path := buildCommand.lookupCommand(); path != "" {
 			fmt.Printf("%s is %s\n", c.Args[0], path)
 		} else {
 			fmt.Fprintf(os.Stderr, "%s: not found\n", command)
 		}
 	default:
+		if path := c.lookupCommand(); path != "" {
+			output, err := exec.Command(c.Name, c.Args[:]...).Output()
+			if err != nil {
+				log.Fatal(err)
+			} else {
+				fmt.Printf("%s", string(output))
+				return
+			}
+		}
 		fmt.Fprintf(os.Stderr, "%s: command not found\n", strings.TrimSpace(c.Name))
 	}
 }
@@ -56,7 +68,7 @@ func (c Command) lookupCommand() string {
 			continue
 		}
 		for _, e := range entries {
-			if !e.Type().IsDir() && e.Name() == c.Args[0] {
+			if !e.Type().IsDir() && e.Name() == c.Name {
 				return existPaths[i] + string(os.PathSeparator) + e.Name()
 			}
 		}
