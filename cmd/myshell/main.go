@@ -6,11 +6,13 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
 
 	for {
+		time.Sleep(1 * time.Second)
 		fmt.Fprint(os.Stdout, "$ ")
 		command, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		if len(command) < 1 {

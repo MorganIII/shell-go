@@ -39,6 +39,12 @@ func (c Command) handleCommand() {
 		} else {
 			fmt.Fprintf(os.Stderr, "%s: not found\n", command)
 		}
+	case "pwd":
+		dir, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(dir)
 	default:
 		if path := c.lookupCommand(); path != "" {
 			output, err := exec.Command(c.Name, c.Args[:]...).Output()
@@ -50,6 +56,7 @@ func (c Command) handleCommand() {
 			}
 		}
 		fmt.Fprintf(os.Stderr, "%s: command not found\n", strings.TrimSpace(c.Name))
+
 	}
 }
 
@@ -57,13 +64,15 @@ func (c *Command) trimArgSpaces() {
 	for i := range c.Args {
 		c.Args[i] = strings.TrimSpace(c.Args[i])
 	}
+	c.Name = strings.TrimSpace(c.Name)
 }
 
 func (c Command) lookupCommand() string {
 	path := os.Getenv("PATH")
 	existPaths := strings.Split(path, string(os.PathListSeparator))
 	for i := len(existPaths) - 1; i >= 0; i-- {
-		entries, err := os.ReadDir(existPaths[i])
+		existPath := existPaths[i]
+		entries, err := os.ReadDir(existPath)
 		if err != nil {
 			continue
 		}
