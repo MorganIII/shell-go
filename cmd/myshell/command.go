@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -77,10 +79,24 @@ func (c Command) lookupCommand() string {
 			continue
 		}
 		for _, e := range entries {
-			if !e.Type().IsDir() && e.Name() == c.Name {
-				return existPaths[i] + string(os.PathSeparator) + e.Name()
+			filePath := filepath.Join(existPath, e.Name())
+			if !e.Type().IsDir() && e.Name() == c.Name && checkFileExec(filePath) {
+				return filePath
 			}
 		}
 	}
 	return ""
+}
+
+func checkFileExec(filePath string) bool {
+	isExecutable := false
+	if runtime.GOOS == "windows" {
+		isExecutable, _ = filepath.Match("*.exe", filepath.Base(filePath))
+	} else {
+		info, err := os.Stat(filePath)
+		if err == nil {
+			isExecutable = info.Mode()&0111 != 0
+		}
+	}
+	return isExecutable
 }
