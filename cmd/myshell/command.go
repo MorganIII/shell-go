@@ -47,6 +47,16 @@ func (c Command) handleCommand() {
 			log.Fatal(err)
 		}
 		fmt.Println(dir)
+	case "cd":
+		isValid := c.validatePath()
+		if !isValid {
+			fmt.Fprintf(os.Stderr, "cd: %s: No such file or directory\n", c.Args[0])
+			return
+		}
+		err := os.Chdir(c.Args[0])
+		if err != nil {	
+			log.Fatal(err)
+		}
 	default:
 		if path := c.lookupCommand(); path != "" {
 			output, err := exec.Command(c.Name, c.Args[:]...).Output()
@@ -99,4 +109,26 @@ func checkFileExec(filePath string) bool {
 		}
 	}
 	return isExecutable
+}
+
+func (c* Command) validatePath() bool {
+	path := strings.Split(c.Args[0], string(os.PathSeparator))
+	absPath := "/"
+	for i := 0; i < len(path); i++ {
+		if(strings.TrimSpace(path[i]) != "") {
+			entries,_ := os.ReadDir(absPath)
+			found := false
+			for _, e := range entries {
+				if e.Type().IsDir() && e.Name() == path[i] {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+			absPath += path[i] + string(os.PathSeparator)
+		}
+	}
+	return true
 }
